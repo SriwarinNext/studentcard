@@ -207,7 +207,8 @@
                         <input type="text" id="adminStudentSearch" onkeyup="searchAdminStudents()" placeholder="ค้นหารหัส, ชื่อ, หรือชั้นเรียน..." 
                                class="w-full pl-9 pr-4 py-2 border rounded-lg text-xs focus:outline-none focus:border-blue-500">
                     </div>
-                    <div class="flex w-full md:w-auto gap-2">
+                    <div class="flex flex-wrap w-full md:w-auto gap-2">
+                        <button onclick="addStudentManual()" class="flex-1 md:flex-none bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition text-xs font-medium shadow"><i class="fas fa-user-plus mr-1"></i> เพิ่มนักเรียนทีละคน</button>
                         <button onclick="downloadExcelTemplate()" class="flex-1 md:flex-none bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition text-xs font-medium border border-blue-200"><i class="fas fa-download mr-1"></i> โหลดไฟล์ตัวอย่าง</button>
                         <button onclick="mockUploadExcel()" class="flex-1 md:flex-none bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition text-xs font-medium"><i class="fas fa-file-excel mr-1"></i> อัปโหลดฐานข้อมูล Excel</button>
                     </div>
@@ -221,6 +222,7 @@
                                 <th class="p-3 border-b">ชื่อ-นามสกุล</th>
                                 <th class="p-3 border-b">ระดับชั้นเรียน</th>
                                 <th class="p-3 border-b">อาจารย์ที่ปรึกษาประจำชั้น</th>
+                                <th class="p-3 border-b text-center w-24">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="adminStudentsBody">
@@ -252,7 +254,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
         import { getDatabase, ref, get, child, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-        // 1. กำหนดค่า Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyB-WyGYrR5oouamXFDo6GTjTaP4Cq6e1Y4",
             authDomain: "studentcard-b34ad.firebaseapp.com",
@@ -260,19 +261,12 @@
             storageBucket: "studentcard-b34ad.firebasestorage.app",
             messagingSenderId: "362898522418",
             appId: "1:362898522418:web:f4ad20f297a6967a33172b",
-            measurementId: "G-QF915VBDT4"
+            measurementId: "G-QF915VBDT4",
+            databaseURL: "https://studentcard-b34ad-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-
-        // 2. ข้อมูลจำลองพื้นฐานระบบ (กรณีฐานข้อมูลยังว่างเปล่า)
-        window.mockStudents = {
-            "04001": { id: "04001", name: "เด็กชายรักดี ขยันเรียน", grade: "ม.1/1", advisor: "ครูใจดี มีเมตตา" },
-            "04002": { id: "04002", name: "นางสาวสมหญิง งามตา", grade: "ม.4/2", advisor: "ครูวิชาญ ชาญวิทย์" },
-            "12345": { id: "12345", name: "นายทดสอบ ระบบดี", grade: "ม.6/1", advisor: "ครูทดสอบ เพื่อใช้งาน" },
-            "04003": { id: "04003", name: "เด็กชายอับดุลเลาะ มะลี", grade: "ม.2/1", advisor: "ครูสุริยา แสงทอง" }
-        };
 
         window.statusMap = {
             "1": { text: "1.รับคำร้อง", border: "border-gray-200", header: "bg-gray-500" },
@@ -282,23 +276,43 @@
             "5": { text: "5.ชำระเงินแล้ว", border: "border-purple-200", header: "bg-purple-500" }
         };
 
-        // อาเรย์หลักสำหรับเก็บคำร้อง
+        window.mockStudents = {};
         window.mockRequests = []; 
         window.currentStudent = null;
         window.adminBoardLimits = { "1": 10, "2": 10, "3": 10, "4": 10, "5": 10 };
 
-        // โหลดข้อมูลคำร้องแบบ Realtime จำลองไว้ใน Array
+        // โหลดข้อมูลรายชื่อนักเรียนแบบ Realtime จาก Node "students"
+        const studentsRef = ref(db, 'students');
+        onValue(studentsRef, (snapshot) => {
+            if(snapshot.exists()) {
+                window.mockStudents = snapshot.val();
+            } else {
+                // หาก Node ใน Firebase ว่างเปล่า ให้สร้างข้อมูลตั้งต้นเพื่อใช้ทดสอบ UX/UI
+                window.mockStudents = {
+                    "04001": { id: "04001", name: "เด็กชายรักดี ขยันเรียน", grade: "ม.1/1", advisor: "ครูใจดี มีเมตตา" },
+                    "04002": { id: "04002", name: "นางสาวสมหญิง งามตา", grade: "ม.4/2", advisor: "ครูวิชาญ ชาญวิทย์" },
+                    "12345": { id: "12345", name: "นายทดสอบ ระบบดี", grade: "ม.6/1", advisor: "ครูทดสอบ เพื่อใช้งาน" },
+                    "04003": { id: "04003", name: "เด็กชายอับดุลเลาะ มะลี", grade: "ม.2/1", advisor: "ครูสุริยา แสงทอง" }
+                };
+                set(studentsRef, window.mockStudents);
+            }
+            if(!document.getElementById('admin-tab-students').classList.contains('hidden')) {
+                window.renderAllStudents(document.getElementById('adminStudentSearch').value);
+            }
+        });
+
+        // โหลดข้อมูลคำร้องแบบ Realtime จาก Node "requests"
         const requestsRef = ref(db, 'requests');
         onValue(requestsRef, (snapshot) => {
             window.mockRequests = [];
             if(snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
-                    data.fbKey = childSnapshot.key; // เก็บ key ของ firebase สำหรับอ้างอิงตอนแก้ไข
+                    data.fbKey = childSnapshot.key;
                     window.mockRequests.push(data);
                 });
             }
-            if(document.getElementById('admin-dashboard-view').classList.contains('hidden-view') === false) {
+            if(!document.getElementById('admin-dashboard-view').classList.contains('hidden-view')) {
                 window.renderAdminBoards();
                 window.updateDashboardSummary();
             }
@@ -307,7 +321,7 @@
             }
         });
 
-        // ================= ฟังก์ชันส่วนกลาง =================
+        // ================= ฟังก์ชันระบบสลับมุมมองหน้าหลัก =================
         window.showView = function(viewId) {
             document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(viewId).classList.remove('hidden-view');
@@ -331,7 +345,7 @@
             document.getElementById('dashStatusDone').innerText = reqs.filter(r => ["3","4","5"].includes(r.status)).length;
         };
 
-        // ================= ส่วนของนักเรียน =================
+        // ================= ส่วนระบบฝั่งนักเรียน =================
         window.searchStudent = function() {
             const stdId = document.getElementById('stdSearchId').value.trim();
             if (!stdId) {
@@ -399,7 +413,6 @@
                 cancelButtonText: 'ยกเลิกคำขอนี้'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // รูปแบบเวลา 24 ชั่วโมง
                     const now = new Date();
                     const timeString = now.toLocaleTimeString('th-TH', { hour12: false, hour: '2-digit', minute: '2-digit' });
                     const dateString = now.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -417,14 +430,12 @@
                         adminRemark: "" 
                     };
                     
-                    // บันทึกลง Firebase
                     push(requestsRef, newReq).then(() => {
                         Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'ส่งข้อมูลคำขอมีบัตรประจำตัวเรียบร้อยแล้ว' });
                         document.getElementById('studentPhone').value = "";
                         document.getElementById('requestReason').value = "";
                         document.getElementById('otherReasonDiv').classList.add('hidden');
                         
-                        // ส่งแจ้งเตือน Telegram
                         window.sendTelegramNotification(window.currentStudent.name, reason, phone, reqIdStr);
                     });
                 }
@@ -497,7 +508,7 @@
             });
         };
 
-        // ================= ส่วนของเจ้าหน้าที่ =================
+        // ================= ส่วนระบบฝั่งเจ้าหน้าที่ =================
         window.loginAdmin = async function() {
             const pin = document.getElementById('adminPin').value;
             if(!pin) return;
@@ -579,7 +590,7 @@
                             
                             <div class="mb-2 p-2 bg-yellow-50 rounded border border-yellow-100 relative group">
                                 <p class="text-[10px] text-yellow-800 pr-4"><strong>หมายเหตุ:</strong> ${remarkDisplay}</p>
-                                <button onclick="editAdminRemark('${req.fbKey}', '${req.adminRemark || ''}')" class="absolute top-1 right-1.5 text-yellow-500 hover:text-yellow-700 transition opacity-50 group-hover:opacity-100" title="เพิ่ม/แก้ไขหมายเหตุ">
+                                <button onclick="editAdminRemark('${req.fbKey}', '${req.adminRemark || ''}')" class="absolute top-1 right-1.5 text-yellow-500 hover:text-yellow-700 transition opacity-50 group-hover:opacity-100">
                                     <i class="fas fa-edit"></i>
                                 </button>
                             </div>
@@ -663,7 +674,7 @@
             });
         };
 
-        // ================= ส่วนจัดการฐานข้อมูลนักเรียน (Excel) =================
+        // ================= ส่วนงานจัดการฐานข้อมูลนักเรียน (CRUD Students) =================
         window.renderAllStudents = function(filterText = '') {
             const tbody = document.getElementById('adminStudentsBody');
             if(!tbody) return;
@@ -686,19 +697,123 @@
                             <td class="p-3 font-medium text-gray-800">${std.name}</td>
                             <td class="p-3 text-gray-700">${std.grade}</td>
                             <td class="p-3 text-gray-500">${std.advisor}</td>
+                            <td class="p-3 text-center space-x-2">
+                                <button onclick="editStudentManual('${std.id}')" class="text-blue-500 hover:text-blue-700 transition" title="แก้ไขข้อมูล"><i class="fas fa-edit text-sm"></i></button>
+                                <button onclick="deleteStudentManual('${std.id}')" class="text-red-400 hover:text-red-600 transition" title="ลบข้อมูล"><i class="fas fa-trash-alt text-sm"></i></button>
+                            </td>
                         </tr>
                     `;
                 }
             });
 
             if(count === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-400">ไม่พบคำค้นหาหรือรายชื่อดังกล่าวในแฟ้มประวัติ</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-400">ไม่พบคำค้นหาหรือรายชื่อดังกล่าวในแฟ้มประวัติ</td></tr>`;
             }
         };
 
         window.searchAdminStudents = function() {
             const keyword = document.getElementById('adminStudentSearch').value;
             window.renderAllStudents(keyword);
+        };
+
+        // ฟังก์ชัน: เพิ่มข้อมูลนักเรียนรายคน (CREATE)
+        window.addStudentManual = function() {
+            Swal.fire({
+                title: 'เพิ่มข้อมูลนักเรียนใหม่',
+                html:
+                    '<input id="swal-input-id" class="swal2-input !text-sm" placeholder="รหัสนักเรียน 5 หลัก" maxlength="5">' +
+                    '<input id="swal-input-name" class="swal2-input !text-sm" placeholder="ชื่อ - นามสกุล">' +
+                    '<input id="swal-input-grade" class="swal2-input !text-sm" placeholder="ระดับชั้นเรียน (เช่น ม.1/1)">' +
+                    '<input id="swal-input-advisor" class="swal2-input !text-sm" placeholder="อาจารย์ที่ปรึกษาประจำชั้น">',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'บันทึกข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const id = document.getElementById('swal-input-id').value.trim();
+                    const name = document.getElementById('swal-input-name').value.trim();
+                    const grade = document.getElementById('swal-input-grade').value.trim();
+                    const advisor = document.getElementById('swal-input-advisor').value.trim();
+                    
+                    if (!id || !name || !grade || !advisor) {
+                        Swal.showValidationMessage(`กรุณากรอกข้อมูลให้ครบทุกช่อง`);
+                        return false;
+                    }
+                    if (id.length !== 5 || isNaN(id)) {
+                        Swal.showValidationMessage(`รหัสนักเรียนต้องเป็นตัวเลขความยาว 5 หลักเท่านั้น`);
+                        return false;
+                    }
+                    if (window.mockStudents[id]) {
+                        Swal.showValidationMessage(`รหัสนักเรียน ${id} มีอยู่ในฐานข้อมูลแล้ว`);
+                        return false;
+                    }
+                    return { id, name, grade, advisor };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    set(ref(db, 'students/' + data.id), data).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เพิ่มข้อมูลนักเรียนสำเร็จแล้ว', showConfirmButton: false, timer: 1500 });
+                    });
+                }
+            });
+        };
+
+        // ฟังก์ชัน: แก้ไขข้อมูลนักเรียน (UPDATE)
+        window.editStudentManual = function(id) {
+            const std = window.mockStudents[id];
+            if(!std) return;
+
+            Swal.fire({
+                title: 'แก้ไขข้อมูลนักเรียน',
+                html:
+                    `<input id="swal-input-id" class="swal2-input !text-sm bg-gray-100 cursor-not-allowed" value="${std.id}" disabled>` +
+                    `<input id="swal-input-name" class="swal2-input !text-sm" value="${std.name}" placeholder="ชื่อ - นามสกุล">` +
+                    `<input id="swal-input-grade" class="swal2-input !text-sm" value="${std.grade}" placeholder="ระดับชั้นเรียน">` +
+                    `<input id="swal-input-advisor" class="swal2-input !text-sm" value="${std.advisor}" placeholder="อาจารย์ที่ปรึกษา">`,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'อัปเดตข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const name = document.getElementById('swal-input-name').value.trim();
+                    const grade = document.getElementById('swal-input-grade').value.trim();
+                    const advisor = document.getElementById('swal-input-advisor').value.trim();
+                    
+                    if (!name || !grade || !advisor) {
+                        Swal.showValidationMessage(`กรุณากรอกข้อมูลให้ครบทุกช่อง`);
+                        return false;
+                    }
+                    return { id: std.id, name, grade, advisor };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    update(ref(db, 'students/' + id), data).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'แก้ไขข้อมูลนักเรียนสำเร็จแล้ว', showConfirmButton: false, timer: 1500 });
+                    });
+                }
+            });
+        };
+
+        // ฟังก์ชัน: ลบข้อมูลนักเรียน (DELETE)
+        window.deleteStudentManual = function(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบข้อมูลนักเรียน?',
+                text: `รหัสนักเรียน ${id} จะถูกลบออกจากฐานข้อมูลอย่างถาวร`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'ยืนยันการลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, 'students/' + id)).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบข้อมูลนักเรียนสำเร็จแล้ว', showConfirmButton: false, timer: 1500 });
+                    });
+                }
+            });
         };
 
         window.downloadExcelTemplate = function() {
