@@ -214,7 +214,7 @@
                     </div>
                 </div>
                 
-                <div class="overflow-x-auto bg-gray-50 rounded-xl border border-gray-150">
+                <div class="overflow-x-auto bg-gray-50 rounded-xl border border-gray-150 relative pb-2">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr class="bg-gray-200 text-gray-700 font-semibold">
@@ -228,6 +228,12 @@
                         <tbody id="adminStudentsBody">
                             </tbody>
                     </table>
+                    
+                    <div id="studentsLoadMoreContainer" class="text-center py-3 hidden bg-white border-t border-gray-100 w-full">
+                        <button id="studentsLoadMoreBtn" onclick="loadMoreStudents()" class="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium px-4 py-1 bg-blue-50 rounded-full transition">
+                            ดูเพิ่มเติม
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -279,7 +285,10 @@
         window.mockStudents = {};
         window.mockRequests = []; 
         window.currentStudent = null;
+        
+        // กำหนดการจำกัดจำนวนรายการเริ่มต้น
         window.adminBoardLimits = { "1": 10, "2": 10, "3": 10, "4": 10, "5": 10 };
+        window.studentListLimit = 20;
 
         // โหลดข้อมูลรายชื่อนักเรียนแบบ Realtime
         const studentsRef = ref(db, 'students');
@@ -318,7 +327,7 @@
             }
         });
 
-        // ================= ฟังก์ชันระบบเปลี่ยนหน้า =================
+        // ================= ฟังก์ชันระบบสลับหน้า =================
         window.showView = function(viewId) {
             document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden-view'));
             document.getElementById(viewId).classList.remove('hidden-view');
@@ -342,7 +351,7 @@
             document.getElementById('dashStatusDone').innerText = reqs.filter(r => ["3","4","5"].includes(r.status)).length;
         };
 
-        // ================= ฝั่งนักเรียน =================
+        // ================= ระบบฝั่งนักเรียน =================
         window.searchStudent = function() {
             const stdId = document.getElementById('stdSearchId').value.trim();
             if (!stdId) {
@@ -420,6 +429,8 @@
                         reqId: reqIdStr,
                         stdId: window.currentStudent.id,
                         name: window.currentStudent.name,
+                        grade: window.currentStudent.grade, // ดึงข้อมูลห้องเรียนเพิ่ม
+                        advisor: window.currentStudent.advisor, // ดึงข้อมูลครูที่ปรึกษาเพิ่ม
                         phone: phone,
                         reason: reason,
                         timestamp: `${dateString} ${timeString} น.`,
@@ -498,12 +509,14 @@
                 cancelButtonText: 'ปิดหน้าต่าง'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    remove(child(requestsRef, fbKey));
+                    remove(child(requestsRef, fbKey)).then(() => {
+                        Swal.fire({ icon: 'success', title: 'ทำการยกเลิกแล้ว', text: 'ระบบลบประวัติรายการคำขอของท่านเสร็จสิ้น', timer: 1500, showConfirmButton: false });
+                    });
                 }
             });
         };
 
-        // ================= ฝั่งเจ้าหน้าที่ =================
+        // ================= ระบบฝั่งเจ้าหน้าที่ =================
         window.loginAdmin = async function() {
             const pin = document.getElementById('adminPin').value;
             if(!pin) return;
@@ -571,6 +584,7 @@
                         ? `<span class="text-yellow-700">${req.adminRemark}</span>` 
                         : `<span class="text-yellow-400 opacity-70">ไม่มีหมายเหตุ</span>`;
 
+                    // เพิ่มการแสดงผลชั้นเรียนและครูที่ปรึกษาในการ์ด
                     cardsHtml += `
                         <div class="bg-white p-3 rounded-xl shadow-sm border ${st.border} mb-3 text-xs">
                             <div class="flex justify-between items-start mb-2 border-b pb-1">
@@ -579,6 +593,7 @@
                             </div>
                             <p class="mb-1 text-gray-500"><strong>รหัสนักเรียน:</strong> ${req.stdId}</p>
                             <p class="mb-1 text-gray-800 font-medium truncate" title="${req.name}"><strong>ชื่อ:</strong> ${req.name}</p>
+                            <p class="mb-1 text-gray-600 text-[11px]"><strong>ชั้น:</strong> ${req.grade || '-'} | <strong>ครู:</strong> ${req.advisor || '-'}</p>
                             <p class="mb-1 text-gray-600"><strong>โทร:</strong> <a href="tel:${req.phone}" class="text-blue-500 underline">${req.phone}</a></p>
                             <p class="mb-1 text-pink-600 font-medium"><strong>เหตุผล:</strong> ${req.reason}</p>
                             <p class="text-[10px] text-gray-400 mb-2">${req.timestamp}</p>
@@ -603,11 +618,11 @@
 
                 let moreBtnHtml = '';
                 if(reqsInStatus.length > limit) {
-                    moreBtnHtml = `<button onclick="loadMoreAdminBoard('${statusKey}')" class="w-full text-[11px] text-blue-600 bg-white hover:bg-blue-50 py-1.5 rounded-lg border border-blue-100 font-medium mt-1">แสดงเพิ่ม (${reqsInStatus.length - limit})</button>`;
+                    moreBtnHtml = `<button onclick="loadMoreAdminBoard('${statusKey}')" class="w-full text-[11px] text-blue-600 bg-white hover:bg-blue-50 py-1.5 rounded-lg border border-blue-100 font-medium mt-1">ดูเพิ่มเติม (${reqsInStatus.length - limit} รายการ)</button>`;
                 }
 
                 container.innerHTML += `
-                    <div class="flex flex-col bg-gray-50 rounded-xl border border-gray-200 h-[550px]">
+                    <div class="flex flex-col bg-gray-50 rounded-xl border border-gray-200 h-[600px]">
                         <div class="${st.header} text-white font-medium p-2.5 rounded-t-xl text-center text-xs shadow-sm flex justify-center items-center gap-1.5">
                             <span>${st.text}</span>
                             <span class="bg-white text-gray-800 text-[10px] px-2 py-0.5 rounded-full font-bold">${reqsInStatus.length}</span>
@@ -632,7 +647,9 @@
                 cancelButtonText: 'ยกเลิก'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    update(child(requestsRef, fbKey), { adminRemark: result.value.trim() });
+                    update(child(requestsRef, fbKey), { adminRemark: result.value.trim() }).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัปเดตหมายเหตุสำเร็จ', showConfirmButton: false, timer: 1000 });
+                    });
                 }
             });
         };
@@ -663,44 +680,62 @@
             });
         };
 
-        // ================= ระบบจัดการนักเรียน (CRUD) =================
+        // ================= ระบบจัดการนักเรียน (CRUD 20 รายการ) =================
         window.renderAllStudents = function(filterText = '') {
             const tbody = document.getElementById('adminStudentsBody');
+            const loadMoreContainer = document.getElementById('studentsLoadMoreContainer');
+            const loadMoreBtn = document.getElementById('studentsLoadMoreBtn');
             if(!tbody) return;
             tbody.innerHTML = '';
             
             const searchKeyword = filterText.toLowerCase().trim();
-            let count = 0;
-
-            Object.values(window.mockStudents).forEach(std => {
-                if (
-                    std.id.includes(searchKeyword) || 
-                    std.name.toLowerCase().includes(searchKeyword) || 
-                    std.grade.toLowerCase().includes(searchKeyword) ||
-                    std.advisor.toLowerCase().includes(searchKeyword)
-                ) {
-                    count++;
-                    tbody.innerHTML += `
-                        <tr class="border-b border-gray-200 hover:bg-gray-100 bg-white">
-                            <td class="p-3 text-blue-600 font-semibold">${std.id}</td>
-                            <td class="p-3 font-medium text-gray-800">${std.name}</td>
-                            <td class="p-3 text-gray-700">${std.grade}</td>
-                            <td class="p-3 text-gray-500">${std.advisor}</td>
-                            <td class="p-3 text-center space-x-2">
-                                <button onclick="editStudentManual('${std.id}')" class="text-blue-500 hover:text-blue-700 transition" title="แก้ไขข้อมูล"><i class="fas fa-edit text-sm"></i></button>
-                                <button onclick="deleteStudentManual('${std.id}')" class="text-red-400 hover:text-red-600 transition" title="ลบข้อมูล"><i class="fas fa-trash-alt text-sm"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                }
+            
+            // คัดกรองนักเรียนก่อน
+            let filteredStudents = Object.values(window.mockStudents).filter(std => {
+                return std.id.includes(searchKeyword) || 
+                       std.name.toLowerCase().includes(searchKeyword) || 
+                       std.grade.toLowerCase().includes(searchKeyword) ||
+                       std.advisor.toLowerCase().includes(searchKeyword);
             });
 
-            if(count === 0) {
+            // หั่นจำนวนการแสดงผลตามค่า window.studentListLimit (เริ่มต้น 20)
+            const displayStudents = filteredStudents.slice(0, window.studentListLimit);
+
+            displayStudents.forEach(std => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100 bg-white">
+                        <td class="p-3 text-blue-600 font-semibold">${std.id}</td>
+                        <td class="p-3 font-medium text-gray-800">${std.name}</td>
+                        <td class="p-3 text-gray-700">${std.grade}</td>
+                        <td class="p-3 text-gray-500">${std.advisor}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="editStudentManual('${std.id}')" class="text-blue-500 hover:text-blue-700 transition" title="แก้ไขข้อมูล"><i class="fas fa-edit text-sm"></i></button>
+                            <button onclick="deleteStudentManual('${std.id}')" class="text-red-400 hover:text-red-600 transition" title="ลบข้อมูล"><i class="fas fa-trash-alt text-sm"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if(filteredStudents.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-400">ไม่พบคำค้นหาหรือรายชื่อดังกล่าวในแฟ้มประวัติ</td></tr>`;
+            }
+
+            // จัดการปุ่มดูเพิ่มเติม
+            if (filteredStudents.length > window.studentListLimit) {
+                loadMoreContainer.classList.remove('hidden');
+                loadMoreBtn.innerText = `ดูเพิ่มเติม (${filteredStudents.length - window.studentListLimit} รายการ)`;
+            } else {
+                loadMoreContainer.classList.add('hidden');
             }
         };
 
+        window.loadMoreStudents = function() {
+            window.studentListLimit += 20; // เพิ่มโควต้าการแสดงผลทีละ 20
+            window.renderAllStudents(document.getElementById('adminStudentSearch').value);
+        };
+
         window.searchAdminStudents = function() {
+            window.studentListLimit = 20; // รีเซ็ตการแสดงผลเมื่อพิมพ์ค้นหาใหม่
             const keyword = document.getElementById('adminStudentSearch').value;
             window.renderAllStudents(keyword);
         };
@@ -807,7 +842,6 @@
             document.body.removeChild(link);
         };
 
-        // ================= ระบบอัปโหลดและอัปเดตฐานข้อมูลด้วยไฟล์จริง (อัปเดตใหม่) =================
         window.mockUploadExcel = function() {
             Swal.fire({
                 title: 'อัปโหลดฐานข้อมูลผ่านไฟล์ CSV',
@@ -828,7 +862,6 @@
                         const updates = {};
                         let successCount = 0;
 
-                        // เริ่มวนอ่านแถวที่ 1 (ข้ามหัวตารางแถวที่ 0)
                         for (let i = 1; i < lines.length; i++) {
                             if (!lines[i].trim()) continue;
                             const cols = lines[i].split(',');
@@ -839,7 +872,6 @@
                                 const grade = cols[2].trim();
                                 const advisor = cols[3].trim();
 
-                                // ตรวจสอบรหัส 5 หลักความถูกต้องก่อนบันทึก
                                 if (id && id.length === 5 && !isNaN(id)) {
                                     updates[id] = { id, name, grade, advisor };
                                     successCount++;
@@ -848,7 +880,6 @@
                         }
 
                         if (successCount > 0) {
-                            // อัปเดตข้อมูลก้อนใหญ่เข้า Node "students" บน Realtime Database พร้อมกัน
                             update(ref(db, 'students'), updates).then(() => {
                                 Swal.fire('สำเร็จ', `นำเข้าข้อมูลนักเรียนลงระบบเสร็จสิ้นทั้งหมด ${successCount} คน`, 'success');
                             }).catch((err) => {
