@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำร้องขอมีบัตรใหม่ - โรงเรียนศรีวารินทร์</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f4f6f9; }
+        .bg-gradient-main { background: linear-gradient(135deg, #ec4899 0%, #3b82f6 100%); }
+        .text-gradient { background: linear-gradient(135deg, #ec4899 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hidden-view { display: none !important; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <header class="bg-white shadow-sm py-4">
+        <div class="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between">
+            <div class="flex items-center gap-4">
+                <img src="https://img2.pic.in.th/logo-SW.png" alt="Logo" class="w-14 h-14 object-contain">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-800">ระบบคำร้องขอมีบัตรใหม่</h1>
+                    <p class="text-xs text-gray-500">โรงเรียนศรีวารินทร์</p>
+                </div>
+            </div>
+            <button onclick="showView('home-view')" class="mt-3 sm:mt-0 text-sm text-blue-600 hover:text-blue-800 font-medium transition flex items-center gap-1">
+                <i class="fas fa-home"></i> กลับหน้าแรก
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        
+        <div id="home-view" class="max-w-md mx-auto mt-6">
+            <div class="bg-white rounded-2xl shadow-xl p-8 border-t-4 border-blue-500 text-center">
+                <i class="fas fa-id-card text-5xl text-blue-500 mb-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-800 mb-2">คำร้องขอมีบัตรใหม่</h2>
+                <p class="text-sm text-gray-400 mb-6">กรุณากรอกเลขประจำตัวนักเรียนเพื่อเริ่มดำเนินการ</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <input type="text" id="stdSearchId" placeholder="เลขประจำตัว 5 หลัก เช่น 04001" maxlength="5" 
+                               class="w-full text-center text-xl tracking-widest px-4 py-3 border rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition">
+                    </div>
+                    <button onclick="searchStudent()" class="w-full bg-gradient-main text-white py-3 rounded-xl font-medium hover:opacity-95 shadow-md transition text-lg">
+                        <i class="fas fa-search"></i> ตรวจสอบข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="student-view" class="max-w-5xl mx-auto hidden-view">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="showView('home-view')" class="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1">
+                    <i class="fas fa-arrow-left"></i> ออกจากระบบนักเรียน
+                </button>
+                <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">เข้าสู่ระบบสำเร็จ</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2">
+                        <i class="fas fa-user-circle text-blue-500 text-lg"></i> โปรไฟล์นักเรียน
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <p><strong class="text-gray-500">เลขประจำตัว:</strong> <span id="lblStdId" class="text-gray-800 font-medium"></span></p>
+                        <p><strong class="text-gray-500">ชื่อ-นามสกุล:</strong> <span id="lblStdName" class="text-gray-800 font-medium"></span></p>
+                        <p><strong class="text-gray-500">ระดับชั้น:</strong> <span id="lblStdGrade" class="text-gray-800 font-medium"></span></p>
+                        <p><strong class="text-gray-500">อาจารย์ที่ปรึกษา:</strong> <span id="lblStdAdvisor" class="text-gray-800 font-medium"></span></p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+                    <h3 class="font-semibold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2">
+                        <i class="fas fa-pen-alt text-pink-500 text-lg"></i> กรอกข้อมูลรายละเอียดคำร้อง
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">เบอร์โทรศัพท์ติดต่อ (10 หลัก) <span class="text-red-500">*</span></label>
+                            <input type="tel" id="studentPhone" maxlength="10" placeholder="08xxxxxxxx" 
+                                   class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">สาเหตุการขอมีบัตรใหม่ <span class="text-red-500">*</span></label>
+                            <select id="requestReason" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 text-sm" onchange="toggleOtherReason()">
+                                <option value="">-- เลือกสาเหตุ --</option>
+                                <option value="ชำรุด">ชำรุด</option>
+                                <option value="หาย">หาย</option>
+                                <option value="อื่นๆ">อื่นๆ (ระบุสาเหตุเพิ่มเติม)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="otherReasonDiv" class="mb-4 hidden">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">ระบุสาเหตุอื่นๆ เพิ่มเติม <span class="text-red-500">*</span></label>
+                        <input type="text" id="otherReasonInput" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500 text-sm" placeholder="พิมพ์ระบุสาเหตุของท่าน...">
+                    </div>
+
+                    <button onclick="submitRequest()" class="w-full bg-green-500 text-white py-2.5 rounded-lg hover:bg-green-600 transition font-medium text-sm shadow">
+                        <i class="fas fa-paper-plane mr-1"></i> ยืนยันการส่งข้อมูลคำร้อง ขอมีบัตรใหม่
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-history text-gray-500"></i> ประวัติและสถานะการส่งคำร้องล่าสุดของคุณ
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
+                                <th class="p-3">วันที่-เวลา</th>
+                                <th class="p-3">สาเหตุ</th>
+                                <th class="p-3">เบอร์ติดต่อ</th>
+                                <th class="p-3">สถานะ</th>
+                                <th class="p-3">หมายเหตุจากเจ้าหน้าที่</th>
+                                <th class="p-3 text-center">การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentHistoryBody">
+                            </tbody>
+                    </table>
+                </div>
+                <div id="studentHistoryMoreBtn" class="text-center mt-4 hidden">
+                    <button onclick="renderStudentHistory(9999)" class="text-xs text-blue-600 hover:underline font-medium">
+                        <i class="fas fa-chevron-down mr-1"></i> แสดงประวัติทั้งหมดเพิ่มเติ่ม
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-login-view" class="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 hidden-view mt-6">
+            <button onclick="showView('home-view')" class="text-gray-500 mb-4 hover:text-gray-800 text-sm flex items-center gap-1"><i class="fas fa-arrow-left"></i> ย้อนกลับ</button>
+            <div class="text-center mb-6">
+                <i class="fas fa-user-shield text-5xl text-pink-500 mb-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">เข้าสู่ระบบผู้ดูแล</h2>
+                <p class="text-xs text-gray-400 mt-1">ตรวจสอบความปลอดภัย PIN ผ่าน Firebase</p>
+            </div>
+            <div class="mb-6">
+                <input type="password" id="adminPin" maxlength="6" placeholder="••••••" class="w-full text-center tracking-widest text-3xl px-4 py-3 border rounded-xl focus:outline-none focus:border-pink-500">
+            </div>
+            <button onclick="loginAdmin()" class="w-full bg-gradient-main text-white py-3 rounded-xl hover:opacity-90 transition font-medium">ยืนยันรหัส PIN</button>
+        </div>
+
+        <div id="admin-dashboard-view" class="w-full bg-white rounded-2xl shadow-lg p-6 hidden-view">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-xl font-semibold text-gradient mb-3 sm:mb-0"><i class="fas fa-tools mr-1"></i> แผงควบคุมจัดการระบบสำหรับเจ้าหน้าที่</h2>
+                <button onclick="logoutAdmin()" class="bg-red-50 text-red-600 border border-red-200 px-4 py-1.5 rounded-lg hover:bg-red-100 transition text-xs font-medium"><i class="fas fa-sign-out-alt"></i> ออกจากระบบ</button>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-500 text-xs font-medium">คำร้องทั้งหมดในระบบ</p>
+                        <h3 class="text-2xl font-bold text-blue-700" id="dashTotal">0</h3>
+                    </div>
+                    <i class="fas fa-file-alt text-3xl text-blue-200"></i>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-xs font-medium">รับคำร้อง (สถานะ 1)</p>
+                        <h3 class="text-2xl font-bold text-gray-700" id="dashStatus1">0</h3>
+                    </div>
+                    <i class="fas fa-inbox text-3xl text-gray-200"></i>
+                </div>
+                <div class="bg-pink-50 border border-pink-100 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-pink-500 text-xs font-medium">กำลังดำเนินการ (สถานะ 2)</p>
+                        <h3 class="text-2xl font-bold text-pink-700" id="dashStatus2">0</h3>
+                    </div>
+                    <i class="fas fa-cog text-3xl text-pink-200"></i>
+                </div>
+                <div class="bg-green-50 border border-green-100 p-4 rounded-xl flex items-center justify-between">
+                    <div>
+                        <p class="text-green-500 text-xs font-medium">ดำเนินการเสร็จสิ้น (สถานะ 3-5)</p>
+                        <h3 class="text-2xl font-bold text-green-700" id="dashStatusDone">0</h3>
+                    </div>
+                    <i class="fas fa-check-circle text-3xl text-green-200"></i>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-6">
+                <button onclick="switchAdminTab('requests')" id="tab-requests" class="text-sm px-5 py-2 rounded-lg bg-pink-500 text-white font-medium transition">กระดานติดตามคำร้อง</button>
+                <button onclick="switchAdminTab('students')" id="tab-students" class="text-sm px-5 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition">รายชื่อในฐานข้อมูล</button>
+            </div>
+
+            <div id="admin-tab-requests">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" id="statusBoardsContainer">
+                    </div>
+            </div>
+
+            <div id="admin-tab-students" class="hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div class="relative w-full md:w-72">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                            <i class="fas fa-search text-xs"></i>
+                        </span>
+                        <input type="text" id="adminStudentSearch" onkeyup="searchAdminStudents()" placeholder="ค้นหารหัส, ชื่อ, หรือชั้นเรียน..." 
+                               class="w-full pl-9 pr-4 py-2 border rounded-lg text-xs focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex w-full md:w-auto gap-2">
+                        <button onclick="downloadExcelTemplate()" class="flex-1 md:flex-none bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition text-xs font-medium border border-blue-200"><i class="fas fa-download mr-1"></i> โหลดไฟล์ตัวอย่าง</button>
+                        <button onclick="mockUploadExcel()" class="flex-1 md:flex-none bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition text-xs font-medium"><i class="fas fa-file-excel mr-1"></i> อัปโหลดฐานข้อมูล Excel</button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto bg-gray-50 rounded-xl border border-gray-150">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-700 font-semibold">
+                                <th class="p-3 border-b">รหัสนักเรียน</th>
+                                <th class="p-3 border-b">ชื่อ-นามสกุล</th>
+                                <th class="p-3 border-b">ระดับชั้นเรียน</th>
+                                <th class="p-3 border-b">อาจารย์ที่ปรึกษาประจำชั้น</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminStudentsBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center text-gray-500 text-sm py-8 mt-auto bg-gray-50 border-t border-gray-200">
+        <div class="mb-4">
+            <button onclick="showView('admin-login-view')" class="text-gray-400 hover:text-blue-500 transition inline-flex items-center gap-1.5 text-xs font-normal">
+                <i class="fas fa-shield-alt text-xs text-gray-400"></i> สำหรับผู้ดูแลระบบ
+            </button>
+        </div>
+        <div class="flex flex-col items-center justify-center space-y-1">
+            <div class="flex items-center gap-1.5 font-medium text-gray-500 text-sm">
+                <img src="https://img2.pic.in.th/logo-SW.png" alt="Icon" class="w-5 h-5 object-contain opacity-80 inline"> 
+                โรงเรียนศรีวารินทร์
+            </div>
+            <div class="text-xs text-gray-400">ระบบคำร้องขอมีบัตรใหม่ - สพม.นราธิวาส</div>
+            <div class="text-[11px] text-gray-400 font-mono mt-1">&lt;\dev\&gt; อับดุลฮากิม อ๊ะหมะ</div>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getDatabase, ref, get, child, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+        // 1. กำหนดค่า Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-WyGYrR5oouamXFDo6GTjTaP4Cq6e1Y4",
+            authDomain: "studentcard-b34ad.firebaseapp.com",
+            projectId: "studentcard-b34ad",
+            storageBucket: "studentcard-b34ad.firebasestorage.app",
+            messagingSenderId: "362898522418",
+            appId: "1:362898522418:web:f4ad20f297a6967a33172b",
+            measurementId: "G-QF915VBDT4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // 2. ข้อมูลจำลองพื้นฐานระบบ (กรณีฐานข้อมูลยังว่างเปล่า)
+        window.mockStudents = {
+            "04001": { id: "04001", name: "เด็กชายรักดี ขยันเรียน", grade: "ม.1/1", advisor: "ครูใจดี มีเมตตา" },
+            "04002": { id: "04002", name: "นางสาวสมหญิง งามตา", grade: "ม.4/2", advisor: "ครูวิชาญ ชาญวิทย์" },
+            "12345": { id: "12345", name: "นายทดสอบ ระบบดี", grade: "ม.6/1", advisor: "ครูทดสอบ เพื่อใช้งาน" },
+            "04003": { id: "04003", name: "เด็กชายอับดุลเลาะ มะลี", grade: "ม.2/1", advisor: "ครูสุริยา แสงทอง" }
+        };
+
+        window.statusMap = {
+            "1": { text: "1.รับคำร้อง", border: "border-gray-200", header: "bg-gray-500" },
+            "2": { text: "2.กำลังดำเนินการ", border: "border-blue-200", header: "bg-blue-500" },
+            "3": { text: "3.เสร็จสิ้น", border: "border-green-200", header: "bg-green-500" },
+            "4": { text: "4.รอรับ/ชำระเงิน", border: "border-yellow-200", header: "bg-yellow-500" },
+            "5": { text: "5.ชำระเงินแล้ว", border: "border-purple-200", header: "bg-purple-500" }
+        };
+
+        // อาเรย์หลักสำหรับเก็บคำร้อง
+        window.mockRequests = []; 
+        window.currentStudent = null;
+        window.adminBoardLimits = { "1": 10, "2": 10, "3": 10, "4": 10, "5": 10 };
+
+        // โหลดข้อมูลคำร้องแบบ Realtime จำลองไว้ใน Array
+        const requestsRef = ref(db, 'requests');
+        onValue(requestsRef, (snapshot) => {
+            window.mockRequests = [];
+            if(snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    const data = childSnapshot.val();
+                    data.fbKey = childSnapshot.key; // เก็บ key ของ firebase สำหรับอ้างอิงตอนแก้ไข
+                    window.mockRequests.push(data);
+                });
+            }
+            if(document.getElementById('admin-dashboard-view').classList.contains('hidden-view') === false) {
+                window.renderAdminBoards();
+                window.updateDashboardSummary();
+            }
+            if(window.currentStudent) {
+                window.renderStudentHistory(10);
+            }
+        });
+
+        // ================= ฟังก์ชันส่วนกลาง =================
+        window.showView = function(viewId) {
+            document.querySelectorAll('main > div').forEach(el => el.classList.add('hidden-view'));
+            document.getElementById(viewId).classList.remove('hidden-view');
+            
+            if(viewId === 'home-view') {
+                document.getElementById('stdSearchId').value = '';
+                window.currentStudent = null;
+            }
+            if(viewId === 'admin-dashboard-view') {
+                window.renderAdminBoards();
+                window.renderAllStudents();
+                window.updateDashboardSummary();
+            }
+        };
+
+        window.updateDashboardSummary = function() {
+            const reqs = window.mockRequests;
+            document.getElementById('dashTotal').innerText = reqs.length;
+            document.getElementById('dashStatus1').innerText = reqs.filter(r => r.status === "1").length;
+            document.getElementById('dashStatus2').innerText = reqs.filter(r => r.status === "2").length;
+            document.getElementById('dashStatusDone').innerText = reqs.filter(r => ["3","4","5"].includes(r.status)).length;
+        };
+
+        // ================= ส่วนของนักเรียน =================
+        window.searchStudent = function() {
+            const stdId = document.getElementById('stdSearchId').value.trim();
+            if (!stdId) {
+                Swal.fire({ icon: 'warning', title: 'กรุณากรอกข้อมูล', text: 'โปรดกรอกเลขประจำตัวนักเรียนก่อนการตรวจสอบข้อมูล' });
+                return;
+            }
+
+            const student = window.mockStudents[stdId];
+            if (student) {
+                window.currentStudent = student;
+                
+                document.getElementById('lblStdId').textContent = student.id;
+                document.getElementById('lblStdName').textContent = student.name;
+                document.getElementById('lblStdGrade').textContent = student.grade;
+                document.getElementById('lblStdAdvisor').textContent = student.advisor;
+                
+                document.getElementById('studentPhone').value = "";
+                document.getElementById('requestReason').value = "";
+                document.getElementById('otherReasonDiv').classList.add('hidden');
+                document.getElementById('otherReasonInput').value = "";
+
+                window.showView('student-view');
+                window.renderStudentHistory(10);
+            } else {
+                Swal.fire({ icon: 'error', title: 'ไม่พบข้อมูลนักเรียน', text: 'รหัสประจำตัวนี้ไม่มีอยู่ในระบบข้อมูลประวัติโรงเรียน' });
+            }
+        };
+
+        window.toggleOtherReason = function() {
+            const reason = document.getElementById('requestReason').value;
+            if (reason === 'อื่นๆ') document.getElementById('otherReasonDiv').classList.remove('hidden');
+            else document.getElementById('otherReasonDiv').classList.add('hidden');
+        };
+
+        window.submitRequest = function() {
+            const phone = document.getElementById('studentPhone').value.trim();
+            if(phone.length !== 10 || isNaN(phone)) {
+                Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ถูกต้อง', text: 'กรุณากรอกหมายเลขโทรศัพท์ติดต่อให้ครบถ้วน 10 หลัก (ตัวเลขเท่านั้น)' });
+                return;
+            }
+
+            let reason = document.getElementById('requestReason').value;
+            if (!reason) {
+                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกสาเหตุ', text: 'โปรดเลือกเหตุผลความจำเป็นในการออกคำขอใบมีบัตรใหม่' });
+                return;
+            }
+
+            if (reason === 'อื่นๆ') {
+                const otherReason = document.getElementById('otherReasonInput').value.trim();
+                if (!otherReason) {
+                    Swal.fire({ icon: 'warning', title: 'โปรดระบุรายละเอียด', text: 'กรุณากรอกคำอธิบายสาเหตุอื่นๆ เพิ่มเติม' });
+                    return;
+                }
+                reason = `อื่นๆ (${otherReason})`;
+            }
+
+            Swal.fire({
+                title: 'ข้อความแจ้งเตือนยืนยันคำร้อง',
+                html: '<div class="my-2"><p class="text-gray-600">ตรวจสอบข้อมูลให้ถี่ถ้วนก่อนบันทึก</p><p class="text-red-500 font-semibold text-xl mt-3">ค่าขอทำบัตรนักเรียนใหม่ 50 บาท</p></div>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10B981',
+                cancelButtonColor: '#EF4444',
+                confirmButtonText: 'ยืนยันและส่งข้อมูล',
+                cancelButtonText: 'ยกเลิกคำขอนี้'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // รูปแบบเวลา 24 ชั่วโมง
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('th-TH', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    const dateString = now.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    
+                    const reqIdStr = `REQ-${Date.now().toString().slice(-6)}`;
+                    
+                    const newReq = {
+                        reqId: reqIdStr,
+                        stdId: window.currentStudent.id,
+                        name: window.currentStudent.name,
+                        phone: phone,
+                        reason: reason,
+                        timestamp: `${dateString} ${timeString} น.`,
+                        status: "1",
+                        adminRemark: "" 
+                    };
+                    
+                    // บันทึกลง Firebase
+                    push(requestsRef, newReq).then(() => {
+                        Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'ส่งข้อมูลคำขอมีบัตรประจำตัวเรียบร้อยแล้ว' });
+                        document.getElementById('studentPhone').value = "";
+                        document.getElementById('requestReason').value = "";
+                        document.getElementById('otherReasonDiv').classList.add('hidden');
+                        
+                        // ส่งแจ้งเตือน Telegram
+                        window.sendTelegramNotification(window.currentStudent.name, reason, phone, reqIdStr);
+                    });
+                }
+            });
+        };
+
+        window.renderStudentHistory = function(limit) {
+            if(!window.currentStudent) return;
+            const tbody = document.getElementById('studentHistoryBody');
+            const btnMore = document.getElementById('studentHistoryMoreBtn');
+            tbody.innerHTML = '';
+
+            const myReqs = window.mockRequests.filter(r => r.stdId === window.currentStudent.id).reverse();
+            
+            if(myReqs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-400 text-xs">ไม่พบฐานประวัติประวัติยื่นขอคำร้องในระบบสารสนเทศ</td></tr>`;
+                btnMore.classList.add('hidden');
+                return;
+            }
+
+            const displayReqs = myReqs.slice(0, limit);
+            
+            displayReqs.forEach(req => {
+                const stInfo = window.statusMap[req.status];
+                let statusBadge = stInfo ? `<span class="${stInfo.header} text-white px-2 py-1 rounded text-xs font-normal">${stInfo.text}</span>` : '';
+                
+                let remarkDisplay = req.adminRemark 
+                    ? `<span class="text-yellow-600 bg-yellow-50 px-2 py-1 rounded border border-yellow-100 font-medium">${req.adminRemark}</span>` 
+                    : `<span class="text-gray-300">-</span>`;
+
+                let actionCell = '';
+                if(req.status === "1") {
+                    actionCell = `<button onclick="cancelStudentRequest('${req.fbKey}')" class="text-xs text-red-500 hover:text-red-700 font-medium bg-red-50 px-2.5 py-1 rounded-md border border-red-200 transition"><i class="fas fa-trash-alt mr-1"></i>ยกเลิกคำขอ</button>`;
+                } else {
+                    actionCell = `<span class="text-xs text-gray-400 font-normal">เจ้าหน้าที่รับเรื่องแล้ว</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 text-xs">
+                        <td class="p-3 text-gray-600">${req.timestamp}</td>
+                        <td class="p-3 font-medium text-gray-800">${req.reason}</td>
+                        <td class="p-3 text-gray-600">${req.phone}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3">${remarkDisplay}</td>
+                        <td class="p-3 text-center">${actionCell}</td>
+                    </tr>
+                `;
+            });
+
+            if(myReqs.length > limit) btnMore.classList.remove('hidden');
+            else btnMore.classList.add('hidden');
+        };
+
+        window.cancelStudentRequest = function(fbKey) {
+            Swal.fire({
+                title: 'คุณต้องการยกเลิกคำขอนี้ใช่หรือไม่?',
+                text: "ข้อมูลคำร้องขอใบนี้จะหายไปจากตารางการทำงานของเจ้าหน้าที่ทันที",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'ยืนยันยกเลิกคำขอ',
+                cancelButtonText: 'ปิดหน้าต่าง'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(child(requestsRef, fbKey)).then(() => {
+                        Swal.fire({ icon: 'success', title: 'ทำการยกเลิกแล้ว', text: 'ระบบลบประวัติรายการคำขอของท่านเสร็จสิ้น', timer: 1500, showConfirmButton: false });
+                    });
+                }
+            });
+        };
+
+        // ================= ส่วนของเจ้าหน้าที่ =================
+        window.loginAdmin = async function() {
+            const pin = document.getElementById('adminPin').value;
+            if(!pin) return;
+            
+            Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+            try {
+                const dbRefObj = ref(db);
+                const snapshot = await get(child(dbRefObj, 'admin/pin'));
+                const validPin = snapshot.exists() ? snapshot.val().toString() : '123456';
+
+                if (pin === validPin) {
+                    document.getElementById('adminPin').value = '';
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ยืนยันสิทธิ์ผู้ดูแลระบบสำเร็จ', showConfirmButton: false, timer: 1500 });
+                    window.showView('admin-dashboard-view');
+                } else {
+                    Swal.fire({ icon: 'error', title: 'รหัสลับไม่ถูกต้อง', text: 'รหัส PIN ข้อมูลความปลอดภัยไม่ตรงกับฐานข้อมูล' });
+                    document.getElementById('adminPin').value = '';
+                }
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อฐานข้อมูลเพื่อตรวจสอบ PIN ได้' });
+                console.error(error);
+            }
+        };
+
+        window.logoutAdmin = function() { window.showView('home-view'); };
+
+        window.switchAdminTab = function(tab) {
+            document.getElementById('admin-tab-requests').classList.add('hidden');
+            document.getElementById('admin-tab-students').classList.add('hidden');
+            document.getElementById('tab-requests').className = "text-sm px-5 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition";
+            document.getElementById('tab-students').className = "text-sm px-5 py-2 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition";
+            
+            if(tab === 'requests') {
+                document.getElementById('admin-tab-requests').classList.remove('hidden');
+                document.getElementById('tab-requests').className = "text-sm px-5 py-2 rounded-lg bg-pink-500 text-white font-medium transition";
+                window.renderAdminBoards();
+            } else {
+                document.getElementById('admin-tab-students').classList.remove('hidden');
+                document.getElementById('tab-students').className = "text-sm px-5 py-2 rounded-lg bg-blue-500 text-white font-medium transition";
+                window.renderAllStudents();
+            }
+        };
+
+        window.renderAdminBoards = function() {
+            const container = document.getElementById('statusBoardsContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            Object.keys(window.statusMap).forEach(statusKey => {
+                const st = window.statusMap[statusKey];
+                const limit = window.adminBoardLimits[statusKey];
+                
+                const reqsInStatus = window.mockRequests.filter(r => r.status === statusKey).reverse();
+                const displayReqs = reqsInStatus.slice(0, limit);
+                
+                let cardsHtml = '';
+                displayReqs.forEach(req => {
+                    let optionsHtml = '';
+                    Object.keys(window.statusMap).forEach(k => {
+                        optionsHtml += `<option value="${k}" ${req.status === k ? 'selected' : ''}>${window.statusMap[k].text}</option>`;
+                    });
+
+                    let remarkDisplay = req.adminRemark 
+                        ? `<span class="text-yellow-700">${req.adminRemark}</span>` 
+                        : `<span class="text-yellow-400 opacity-70">ไม่มีหมายเหตุ</span>`;
+
+                    cardsHtml += `
+                        <div class="bg-white p-3 rounded-xl shadow-sm border ${st.border} mb-3 text-xs">
+                            <div class="flex justify-between items-start mb-2 border-b pb-1">
+                                <span class="font-bold text-gray-700">${req.reqId}</span>
+                                <button onclick="deleteAdminRequest('${req.fbKey}')" class="text-gray-300 hover:text-red-500" title="ลบรายการถาวร"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <p class="mb-1 text-gray-500"><strong>รหัสนักเรียน:</strong> ${req.stdId}</p>
+                            <p class="mb-1 text-gray-800 font-medium truncate" title="${req.name}"><strong>ชื่อ:</strong> ${req.name}</p>
+                            <p class="mb-1 text-gray-600"><strong>โทร:</strong> <a href="tel:${req.phone}" class="text-blue-500 underline">${req.phone}</a></p>
+                            <p class="mb-1 text-pink-600 font-medium"><strong>เหตุผล:</strong> ${req.reason}</p>
+                            <p class="text-[10px] text-gray-400 mb-2">${req.timestamp}</p>
+                            
+                            <div class="mb-2 p-2 bg-yellow-50 rounded border border-yellow-100 relative group">
+                                <p class="text-[10px] text-yellow-800 pr-4"><strong>หมายเหตุ:</strong> ${remarkDisplay}</p>
+                                <button onclick="editAdminRemark('${req.fbKey}', '${req.adminRemark || ''}')" class="absolute top-1 right-1.5 text-yellow-500 hover:text-yellow-700 transition opacity-50 group-hover:opacity-100" title="เพิ่ม/แก้ไขหมายเหตุ">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            
+                            <select onchange="updateRequestStatus('${req.fbKey}', this.value)" class="w-full border rounded p-1 text-[11px] bg-gray-50 font-medium focus:outline-none focus:border-blue-400 mt-1">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    `;
+                });
+
+                if(reqsInStatus.length === 0) {
+                    cardsHtml = `<div class="text-center text-gray-400 font-normal py-6">ไม่มีคำร้องค้าง</div>`;
+                }
+
+                let moreBtnHtml = '';
+                if(reqsInStatus.length > limit) {
+                    moreBtnHtml = `<button onclick="loadMoreAdminBoard('${statusKey}')" class="w-full text-[11px] text-blue-600 bg-white hover:bg-blue-50 py-1.5 rounded-lg border border-blue-100 font-medium mt-1">แสดงเพิ่ม (${reqsInStatus.length - limit})</button>`;
+                }
+
+                container.innerHTML += `
+                    <div class="flex flex-col bg-gray-50 rounded-xl border border-gray-200 h-[550px]">
+                        <div class="${st.header} text-white font-medium p-2.5 rounded-t-xl text-center text-xs shadow-sm flex justify-center items-center gap-1.5">
+                            <span>${st.text}</span>
+                            <span class="bg-white text-gray-800 text-[10px] px-2 py-0.5 rounded-full font-bold">${reqsInStatus.length}</span>
+                        </div>
+                        <div class="p-2 flex-1 overflow-y-auto custom-scroll">
+                            ${cardsHtml}
+                            ${moreBtnHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        window.editAdminRemark = function(fbKey, currentRemark) {
+            Swal.fire({
+                title: 'ระบุหมายเหตุ/ข้อความถึงนักเรียน',
+                input: 'text',
+                inputValue: currentRemark,
+                inputPlaceholder: 'เช่น รูปถ่ายไม่ชัดเจน, มารับบัตรวันพรุ่งนี้...',
+                showCancelButton: true,
+                confirmButtonText: 'บันทึกหมายเหตุ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    update(child(requestsRef, fbKey), { adminRemark: result.value.trim() }).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัปเดตหมายเหตุสำเร็จ', showConfirmButton: false, timer: 1000 });
+                    });
+                }
+            });
+        };
+
+        window.loadMoreAdminBoard = function(statusKey) {
+            window.adminBoardLimits[statusKey] += 10;
+            window.renderAdminBoards();
+        };
+
+        window.updateRequestStatus = function(fbKey, newStatus) {
+            update(child(requestsRef, fbKey), { status: newStatus }).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ปรับปรุงสถานะสำเร็จ', showConfirmButton: false, timer: 1000 });
+            });
+        };
+
+        window.deleteAdminRequest = function(fbKey) {
+            Swal.fire({
+                title: 'ยืนยันลบคำร้อง?',
+                text: "ลบออกจากฐานข้อมูลของระบบแบบถาวรเรียกกลับคืนไม่ได้!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'ยืนยันลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(child(requestsRef, fbKey)).then(() => {
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบข้อมูลเสร็จสิ้น', showConfirmButton: false, timer: 1000 });
+                    });
+                }
+            });
+        };
+
+        // ================= ส่วนจัดการฐานข้อมูลนักเรียน (Excel) =================
+        window.renderAllStudents = function(filterText = '') {
+            const tbody = document.getElementById('adminStudentsBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const searchKeyword = filterText.toLowerCase().trim();
+            let count = 0;
+
+            Object.values(window.mockStudents).forEach(std => {
+                if (
+                    std.id.includes(searchKeyword) || 
+                    std.name.toLowerCase().includes(searchKeyword) || 
+                    std.grade.toLowerCase().includes(searchKeyword) ||
+                    std.advisor.toLowerCase().includes(searchKeyword)
+                ) {
+                    count++;
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-100 bg-white">
+                            <td class="p-3 text-blue-600 font-semibold">${std.id}</td>
+                            <td class="p-3 font-medium text-gray-800">${std.name}</td>
+                            <td class="p-3 text-gray-700">${std.grade}</td>
+                            <td class="p-3 text-gray-500">${std.advisor}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if(count === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-gray-400">ไม่พบคำค้นหาหรือรายชื่อดังกล่าวในแฟ้มประวัติ</td></tr>`;
+            }
+        };
+
+        window.searchAdminStudents = function() {
+            const keyword = document.getElementById('adminStudentSearch').value;
+            window.renderAllStudents(keyword);
+        };
+
+        window.downloadExcelTemplate = function() {
+            const csvContent = "\uFEFFรหัสนักเรียน,ชื่อ-นามสกุล,ระดับชั้น,อาจารย์ที่ปรึกษา\n04001,เด็กชายรักดี ขยันเรียน,ม.1/1,ครูใจดี มีเมตตา\n04002,นางสาวสมหญิง งามตา,ม.4/2,ครูวิชาญ ชาญวิทย์";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "student_template.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.mockUploadExcel = function() {
+            Swal.fire({
+                title: 'อัปโหลดฐานข้อมูลผ่านไฟล์ Excel',
+                text: 'นำเข้าข้อมูลไฟล์ (.csv) ที่อ้างอิงจากตัวอย่างโครงสร้าง',
+                input: 'file',
+                inputAttributes: { accept: '.csv, .xlsx, .xls' },
+                showCancelButton: true,
+                confirmButtonText: 'นำเข้าข้อมูล',
+                cancelButtonText: 'ยกเลิก'
+            }).then((file) => {
+                if (file.value) Swal.fire('สำเร็จ', 'ระบบอัปโหลดและอัปเดตรายชื่อนักเรียนกลุ่มใหม่สำเร็จ', 'success');
+            });
+        };
+
+        // ================= ส่วน API เชื่อมต่อ Telegram ของจริง =================
+        window.sendTelegramNotification = function(name, reason, phone, reqId) {
+            const token = "8910819266:AAFgRDQatpVTlauJ7DjnoYByRSV7M1koRbY";
+            const chatId = "7925080260";
+            const message = `🔔 <b>มีคำร้องขอมีบัตรใหม่เข้าสู่ระบบ!</b>\n\n` + 
+                            `🆔 <b>รหัสคำร้อง:</b> ${reqId}\n` +
+                            `👤 <b>ผู้ยื่น:</b> ${name}\n` +
+                            `📞 <b>เบอร์ติดต่อ:</b> ${phone}\n` +
+                            `📝 <b>สาเหตุ:</b> ${reason}\n\n` +
+                            `<i>กรุณาเข้าสู่ระบบหลังบ้านเพื่อตรวจสอบรายละเอียดครับ</i>`;
+
+            fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            }).then(response => {
+                if(!response.ok) console.error("Telegram API Error:", response);
+            }).catch(error => {
+                console.error("Fetch Error:", error);
+            });
+        };
+
+    </script>
+</body>
+</html>
